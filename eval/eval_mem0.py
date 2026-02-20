@@ -145,10 +145,7 @@ class EvalMem0:
         # Save to mapping
         self.session_dialogue_map[session_identifier] = dialogue_turns
         
-        # 1. Add session memory
-        self.add_session_memory(dialogue_turns, session_identifier)
-        
-        # 2. Process all dialogue turns with is_query=true
+        # 1. Process all dialogue turns with is_query=true
         for turn_idx, turn in enumerate(dialogue_turns):
             if turn.get('is_query', False):
                 question = turn.get('content', '').strip()
@@ -224,6 +221,9 @@ class EvalMem0:
                 }
                 
                 logger.info(f"Retrieved {len(memory_details)} relevant memory fragments")
+        
+        # 2. Add session memory after responding to queries
+        self.add_session_memory(dialogue_turns, session_identifier)
 
     def run(self, data_file: str, output_dir: str = "simple_eval_results"):
         """
