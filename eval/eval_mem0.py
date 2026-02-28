@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # Configure API key and base_url
 # 从环境变量读取，避免硬编码敏感信息
 API_KEY = os.getenv("OPENAI_API_KEY", "")
-BASE_URL = os.getenv("OPENAI_BASE_URL", "")
+BASE_URL = os.getenv("OPENAI_BASE_URL", "http://localhost:8000/v1")
 
 
 class EvalMem0:
@@ -36,18 +36,17 @@ class EvalMem0:
             llm={
                 "provider": "openai",
                 "config": {
-                    "model": "gpt-4o-mini",
+                    "model": "Qwen3-VL-8B-Instruct",
                     "api_key": API_KEY,
                     "openai_base_url": BASE_URL,
                 }
             },
             embedder={
-                "provider": "openai",
+                "provider": "huggingface",
                 "config": {
-                    "model": "text-embedding-3-small",
-                    "api_key": API_KEY,
-                    "openai_base_url": BASE_URL
-                }
+                    "model": "/mnt/sdb/liuqiaoan/all-MiniLM-L6-v2",
+                    "model_kwargs": {"device": "cuda:0"},
+                },
             }
         )
         self.memory = Memory(config)
