@@ -3,6 +3,7 @@ import json
 import time
 import os
 import logging
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from typing import List, Dict
 from pathlib import Path
 from datetime import datetime
@@ -19,13 +20,15 @@ logger = logging.getLogger(__name__)
 # 从环境变量读取，避免硬编码敏感信息
 API_KEY = os.getenv("OPENAI_API_KEY", "")
 BASE_URL = os.getenv("OPENAI_BASE_URL", "http://localhost:8000/v1")
-PERSONA_NAME = "Ethan_Hunt"
+SCRIPT_DIR = Path(__file__).resolve().parent
+DATASET_DIR = (SCRIPT_DIR / "../dataset").resolve()
 
 
 class EvalMem0:
     """Simplified memory system test class"""
 
-    def __init__(self, retrieve_k: int = 10):
+    def __init__(self, persona_name: str, retrieve_k: int = 10):
+        self.persona_name = persona_name
         self.retrieve_k = retrieve_k
 
         # Set environment variables
@@ -45,8 +48,8 @@ class EvalMem0:
             vector_store = {
                 "provider": "chroma",
                 "config": {
-                    "collection_name": PERSONA_NAME,
-                    "path": f"./{PERSONA_NAME}",
+                    "collection_name": self.persona_name,
+                    "path": f"./{self.persona_name}",
                 }
             },
             embedder={
@@ -288,16 +291,51 @@ class EvalMem0:
         logger.info(f"{'='*60}")
 
 
+def run_for_dataset(data_file: Path, retrieve_k: int = 20, output_dir: str = "simple_eval_results"):
+    """Run one dataset file and return summary."""
+    persona_name = data_file.name.replace("_dialogues_256k.json", "")
+    tester = EvalMem0(persona_name=persona_name, retrieve_k=retrieve_k)
+    tester.run(str(data_file), output_dir=output_dir)
+    return {
+        "persona_name": persona_name,
+        "data_file": str(data_file),
+        "query_count": len(tester.retrieval_results),
+    }
+
+
 def main():
     """Main function"""
-    # Test file
-    data_file = f"../dataset/{PERSONA_NAME}_dialogues_256k.json"
-    
-    # Create test instance
-    tester = EvalMem0(retrieve_k=20)
-    
-    # Run test
-    tester.run(data_file, output_dir="simple_eval_results")
+    dataset_files = sorted(DATASET_DIR.glob("*_dialogues_256k.json"))
+
+    if not dataset_files:
+        raise FileNotFoundError(f"No dataset files found in {DATASET_DIR}")
+
+    logger.info(f"Found {len(dataset_files)} dataset files under {DATASET_DIR}")
+
+    max_workers = min(len(dataset_files), os.cpu_count() or 1)
+    logger.info(f"Running in parallel with max_workers={max_workers}")
+
+    summaries = []
+    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {
+            executor.submit(run_for_dataset, data_file): data_file
+            for data_file in dataset_files
+        }
+
+        for future in as_completed(future_map):
+            data_file = future_map[future]
+            try:
+                summary = future.result()
+                summaries.append(summary)
+                logger.info(
+                    "Completed %s, extracted %s queries",
+                    summary["persona_name"],
+                    summary["query_count"],
+                )
+            except Exception:
+                logger.exception("Failed processing dataset: %s", data_file)
+
+    logger.info("Finished processing %d/%d dataset files", len(summaries), len(dataset_files))
 
 
 if __name__ == "__main__":
