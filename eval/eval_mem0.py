@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 # 从环境变量读取，避免硬编码敏感信息
 API_KEY = os.getenv("OPENAI_API_KEY", "")
 BASE_URL = os.getenv("OPENAI_BASE_URL", "http://localhost:8000/v1")
+PERSONA_NAME = "Ethan_Hunt"
 
 
 class EvalMem0:
@@ -39,6 +40,13 @@ class EvalMem0:
                     "model": "Qwen3-VL-8B-Instruct",
                     "api_key": API_KEY,
                     "openai_base_url": BASE_URL,
+                }
+            },
+            vector_store = {
+                "provider": "chroma",
+                "config": {
+                    "collection_name": PERSONA_NAME,
+                    "path": "./mem0_db",
                 }
             },
             embedder={
@@ -283,7 +291,7 @@ class EvalMem0:
 def main():
     """Main function"""
     # Test file
-    data_file = "../dataset/Adeleke_Okonjo_dialogues_256k.json"
+    data_file = f"../dataset/{PERSONA_NAME}_dialogues_256k.json"
     
     # Create test instance
     tester = EvalMem0(retrieve_k=20)

@@ -1,0 +1,11 @@
+{
+    "recall_all@5": 0.0432,
+    "recall_all@10": 0.0926,
+    "recall_all@20": 0.0988,
+    "recall_any@5": 0.1235,
+    "recall_any@10": 0.2346,
+    "recall_any@20": 0.2716,
+    "ndcg_any@5": 0.0513,
+    "ndcg_any@10": 0.077,
+    "ndcg_any@20": 0.0856
+}
