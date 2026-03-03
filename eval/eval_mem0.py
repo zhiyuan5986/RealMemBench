@@ -46,7 +46,7 @@ class EvalMem0:
                 "provider": "chroma",
                 "config": {
                     "collection_name": PERSONA_NAME,
-                    "path": "./mem0_db",
+                    "path": f"./{PERSONA_NAME}",
                 }
             },
             embedder={
